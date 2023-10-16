@@ -211,19 +211,19 @@ class Salsa20(object):
         ctx = self.ctx
         if len(key) == 32:  # recommended
             constants = b"expand 32-byte k"
-            ctx[1], ctx[2], ctx[3], ctx[4] = little4_i32.unpack(key[0:16])
+            ctx[1], ctx[2], ctx[3], ctx[4] = little4_i32.unpack(key[:16])
             ctx[11], ctx[12], ctx[13], ctx[14] = little4_i32.unpack(key[16:32])
         elif len(key) == 16:
             constants = b"expand 16-byte k"
-            ctx[1], ctx[2], ctx[3], ctx[4] = little4_i32.unpack(key[0:16])
-            ctx[11], ctx[12], ctx[13], ctx[14] = little4_i32.unpack(key[0:16])
+            ctx[1], ctx[2], ctx[3], ctx[4] = little4_i32.unpack(key[:16])
+            ctx[11], ctx[12], ctx[13], ctx[14] = little4_i32.unpack(key[:16])
         else:
             raise Exception("key length isn't 32 or 16 bytes.")
         ctx[0], ctx[5], ctx[10], ctx[15] = little4_i32.unpack(constants)
 
     def setIV(self, IV):
         assert type(IV) == bytes
-        assert len(IV) * 8 == 64, 'nonce (IV) not 64 bits'
+        assert len(IV) == 8, 'nonce (IV) not 64 bits'
         self.IV = IV
         ctx = self.ctx
         ctx[6], ctx[7] = little2_i32.unpack(IV)
@@ -254,11 +254,7 @@ class Salsa20(object):
             self.setCounter((self.getCounter() + 1) % 2 ** 64)
             # Stopping at 2^70 bytes per nonce is user's responsibility.
             for j in range(min(64, lendata - i)):
-                if python3:
-                    munged[i + j] = data[i + j] ^ h[j]
-                else:
-                    munged[i + j] = ord(data[i + j]) ^ ord(h[j])
-
+                munged[i + j] = data[i + j] ^ h[j] if python3 else ord(data[i + j]) ^ ord(h[j])
         self._lastChunk64 = not lendata % 64
         return bytes(munged)
 

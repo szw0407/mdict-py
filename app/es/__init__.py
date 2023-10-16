@@ -26,15 +26,15 @@ def search_examples(word: str, lang: str) -> str:
         }
     }
     res = esClient.search(index=ESConst.index, body=dsl)
-    examples_html = """ <br/>
+    if res["hits"]["total"]["value"] > 0:
+        hits = res["hits"]["hits"]
+        examples_html = """ <br/>
                         <strong>牛津与朗文相关例句</strong>
                         <link rel="stylesheet" type="text/css" href="LSC4.css">
                     """
-    if res["hits"]["total"]["value"] > 0:
-        hits = res["hits"]["hits"]
         for hit in hits:
             one_example_html = hit["_source"][ESConst.example_html]
-            examples_html += '<span class="example">' + one_example_html + '</span>'
+            examples_html += f'<span class="example">{one_example_html}</span>'
         return examples_html
     return ''
 
