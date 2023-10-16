@@ -18,7 +18,7 @@ import struct
 # follows this description: http://homes.esat.kuleuven.be/~bosselae/ripemd/rmd128.txt
 
 def f(j, x, y, z):
-    assert (0 <= j and j < 64)
+    assert 0 <= j < 64
     if j < 16:
         return x ^ y ^ z
     elif j < 32:
@@ -30,7 +30,7 @@ def f(j, x, y, z):
 
 
 def K(j):
-    assert (0 <= j and j < 64)
+    assert 0 <= j < 64
     if j < 16:
         return 0x00000000
     elif j < 32:
@@ -42,7 +42,7 @@ def K(j):
 
 
 def Kp(j):
-    assert (0 <= j and j < 64)
+    assert 0 <= j < 64
     if j < 16:
         return 0x50a28be6
     elif j < 32:

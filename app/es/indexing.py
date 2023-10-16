@@ -79,17 +79,6 @@ def _example_parse(dictionary: str, word: str, raw_html: str) -> List[ESDoc]:
     if not raw_html:
         return result
     bs = BeautifulSoup(raw_html, "html.parser")
-    if dictionary == 'O8C':
-        examples = bs.find_all('span', attrs={"level": "4", "class": "x-g"})
-        for example in examples:
-            try:
-                en = example.find('span', attrs={"level": "5", "class": "x"})
-                zh = example.find('span', attrs={"level": "5", "class": "tx"})
-                if en and zh:
-                    result.append(ESDoc(dictionary, word, en.text, zh.text, example.encode_contents().decode()))
-            except Exception as e:
-                logging.exception(e, exc_info=True)
-                logging.info(f">>>parse failed, element: {example}")
     if dictionary == 'LSC4':
         examples = bs.find_all('span', attrs={'class': "example"})
         for example in examples:
@@ -104,6 +93,17 @@ def _example_parse(dictionary: str, word: str, raw_html: str) -> List[ESDoc]:
                     result.append(ESDoc(dictionary, word, en, zh, example.encode_contents().decode()))
                 else:
                     log.info(f">>>parse failed, element: {example}")
+    elif dictionary == 'O8C':
+        examples = bs.find_all('span', attrs={"level": "4", "class": "x-g"})
+        for example in examples:
+            try:
+                en = example.find('span', attrs={"level": "5", "class": "x"})
+                zh = example.find('span', attrs={"level": "5", "class": "tx"})
+                if en and zh:
+                    result.append(ESDoc(dictionary, word, en.text, zh.text, example.encode_contents().decode()))
+            except Exception as e:
+                logging.exception(e, exc_info=True)
+                logging.info(f">>>parse failed, element: {example}")
     return result
 
 

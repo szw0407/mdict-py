@@ -38,7 +38,4 @@ def _contains_chinese(word: str) -> bool:
     :param word
     :return bool
     """
-    for ch in word:
-        if u'\u4e00' <= ch <= u'\u9fff':
-            return True
-    return False
+    return any(u'\u4e00' <= ch <= u'\u9fff' for ch in word)

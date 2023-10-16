@@ -36,13 +36,13 @@ class MdictDb(object):
         _filename, _file_extension = os.path.splitext(fname)
         assert (_file_extension == '.mdx')
         assert (os.path.isfile(fname))
-        self._mdx_db = _filename + ".mdx.db"
+        self._mdx_db = f"{_filename}.mdx.db"
         # make index anyway
         if force_rebuild:
             self._make_mdx_index(self._mdx_db)
-            if os.path.isfile(_filename + '.mdd'):
-                self._mdd_file = _filename + ".mdd"
-                self._mdd_db = _filename + ".mdd.db"
+            if os.path.isfile(f'{_filename}.mdd'):
+                self._mdd_file = f"{_filename}.mdd"
+                self._mdd_db = f"{_filename}.mdd.db"
                 self._make_mdd_index(self._mdd_db)
 
         if os.path.isfile(self._mdx_db):
@@ -58,9 +58,9 @@ class MdictDb(object):
                 conn.close()
                 self._make_mdx_index(self._mdx_db)
                 print("mdict.db rebuilt!")
-                if os.path.isfile(_filename + '.mdd'):
-                    self._mdd_file = _filename + ".mdd"
-                    self._mdd_db = _filename + ".mdd.db"
+                if os.path.isfile(f'{_filename}.mdd'):
+                    self._mdd_file = f"{_filename}.mdd"
+                    self._mdd_db = f"{_filename}.mdd.db"
                     self._make_mdd_index(self._mdd_db)
                     print("mdd.db rebuilt!")
             cursor = conn.execute("SELECT * FROM META WHERE key = \"encoding\"")
@@ -80,12 +80,11 @@ class MdictDb(object):
         else:
             self._make_mdx_index(self._mdx_db)
 
-        if os.path.isfile(_filename + ".mdd"):
-            self._mdd_file = _filename + ".mdd"
-            self._mdd_db = _filename + ".mdd.db"
+        if os.path.isfile(f"{_filename}.mdd"):
+            self._mdd_file = f"{_filename}.mdd"
+            self._mdd_db = f"{_filename}.mdd.db"
             if not os.path.isfile(self._mdd_db):
                 self._make_mdd_index(self._mdd_db)
-        pass
 
     def _replace_stylesheet(self, txt):
         # substitute stylesheet definition
@@ -107,7 +106,7 @@ class MdictDb(object):
         self._mdx_db = db_name
         returned_index = mdx.get_index(check_block=self._check)
         index_list = returned_index['index_dict_list']
-        print("db_name=" + db_name)
+        print(f"db_name={db_name}")
         conn = sqlite3.connect(db_name)
         c = conn.cursor()
         c.execute(
@@ -260,39 +259,41 @@ class MdictDb(object):
         elif record_block_type == 2:
             # decompress
             _record_block = zlib.decompress(record_block_compressed[8:])
-        data = _record_block[index['record_start'] - index['offset']:index['record_end'] - index['offset']]
-        return data
+        return _record_block[
+            index['record_start']
+            - index['offset'] : index['record_end']
+            - index['offset']
+        ]
 
     def mdx_lookup(self, keyword):
         conn = sqlite3.connect(self._mdx_db)
         cursor = conn.execute("SELECT * FROM MDX_INDEX WHERE key_text = " + "\"" + keyword + "\"")
         lookup_result_list = []
-        mdx_file = open(self._mdx_file, 'rb')
-        for result in cursor:
-            index = {}
-            index['file_pos'] = result[1]
-            index['compressed_size'] = result[2]
-            index['decompressed_size'] = result[3]
-            index['record_block_type'] = result[4]
-            index['record_start'] = result[5]
-            index['record_end'] = result[6]
-            index['offset'] = result[7]
-            lookup_result_list.append(self.get_mdx_by_index(mdx_file, index))
-        conn.close()
-        mdx_file.close()
+        with open(self._mdx_file, 'rb') as mdx_file:
+            for result in cursor:
+                index = {
+                    'file_pos': result[1],
+                    'compressed_size': result[2],
+                    'decompressed_size': result[3],
+                    'record_block_type': result[4],
+                    'record_start': result[5],
+                    'record_end': result[6],
+                    'offset': result[7],
+                }
+                lookup_result_list.append(self.get_mdx_by_index(mdx_file, index))
+            conn.close()
         return lookup_result_list
 
     def mdd_lookup(self, keyword):
         conn = sqlite3.connect(self._mdd_db)
         cursor = conn.execute("SELECT * FROM MDX_INDEX WHERE key_text = " + "\"" + keyword + "\"")
         lookup_result_list = []
-        mdd_file = open(self._mdd_file, 'rb')
-        for result in cursor:
-            index = {'file_pos': result[1], 'compressed_size': result[2], 'decompressed_size': result[3],
-                     'record_block_type': result[4], 'record_start': result[5], 'record_end': result[6],
-                     'offset': result[7]}
-            lookup_result_list.append(self.get_mdd_by_index(mdd_file, index))
-        mdd_file.close()
+        with open(self._mdd_file, 'rb') as mdd_file:
+            for result in cursor:
+                index = {'file_pos': result[1], 'compressed_size': result[2], 'decompressed_size': result[3],
+                         'record_block_type': result[4], 'record_start': result[5], 'record_end': result[6],
+                         'offset': result[7]}
+                lookup_result_list.append(self.get_mdd_by_index(mdd_file, index))
         conn.close()
         return lookup_result_list
 
@@ -301,30 +302,22 @@ class MdictDb(object):
             return []
         conn = sqlite3.connect(self._mdd_db)
         if query:
-            if '*' in query:
-                query = query.replace('*', '%')
-            else:
-                query = query + '%'
+            query = query.replace('*', '%') if '*' in query else f'{query}%'
             cursor = conn.execute('SELECT key_text FROM MDX_INDEX WHERE key_text LIKE \"' + query + '\"')
-            keys = [item[0] for item in cursor]
         else:
             cursor = conn.execute('SELECT key_text FROM MDX_INDEX')
-            keys = [item[0] for item in cursor]
+        keys = [item[0] for item in cursor]
         conn.close()
         return keys
 
     def get_mdx_keys(self, query=''):
         conn = sqlite3.connect(self._mdx_db)
         if query:
-            if '*' in query:
-                query = query.replace('*', '%')
-            else:
-                query = query + '%'
+            query = query.replace('*', '%') if '*' in query else f'{query}%'
             cursor = conn.execute('SELECT key_text FROM MDX_INDEX WHERE key_text LIKE \"' + query + '\"')
-            keys = [item[0] for item in cursor]
         else:
             cursor = conn.execute('SELECT key_text FROM MDX_INDEX')
-            keys = [item[0] for item in cursor]
+        keys = [item[0] for item in cursor]
         conn.close()
         return keys
 

@@ -25,10 +25,7 @@ class FlexBuffer:
 
     def alloc(self, initSize, blockSize):
 
-        if blockSize:
-            sz = blockSize
-        else:
-            sz = 4096
+        sz = blockSize if blockSize else 4096
         self.blockSize = self.roundUp(sz)
         self.c = 0
         self.l = self.roundUp(initSize) | 0
@@ -39,10 +36,7 @@ class FlexBuffer:
     def roundUp(self, n):
 
         r = n % 4
-        if r == 0:
-            return n
-        else:
-            return n + 4 - r
+        return n if r == 0 else n + 4 - r
 
     def reset(self):
 
@@ -51,7 +45,7 @@ class FlexBuffer:
 
     def pack(self, size):
 
-        return self.buf[0:size]
+        return self.buf[:size]
 
 
 def _decompress(inBuf, outBuf):
@@ -71,7 +65,7 @@ def _decompress(inBuf, outBuf):
     ip_end = len(inBuf)
 
     if t > 17:
-        ip = ip + 1
+        ip += 1
         t = t - 17
         if t < 4:
             state = c_match_next
@@ -82,7 +76,7 @@ def _decompress(inBuf, outBuf):
                 op = op + 1
                 ip = ip + 1
                 t = t - 1
-                if not t > 0: break
+                if t <= 0: break
             state = c_first_literal_run
 
     while True:
@@ -109,7 +103,7 @@ def _decompress(inBuf, outBuf):
                 op = op + 1
                 ip = ip + 1
                 t = t - 1
-                if not t > 0: break
+                if t <= 0: break
             # emulate c switch
             state = c_first_literal_run
 
@@ -188,7 +182,7 @@ def _decompress(inBuf, outBuf):
                     op += 1
                     m_pos += 1
                     t -= 1
-                    if not t > 0: break
+                    if t <= 0: break
             # emulate c switch
             state = c_copy_match
 
@@ -202,7 +196,7 @@ def _decompress(inBuf, outBuf):
                     op += 1
                     m_pos += 1
                     t -= 1
-                    if not t > 0: break
+                    if t <= 0: break
             # emulating c switch
             state = c_match_done
 
