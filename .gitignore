@@ -2,10 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+.DS_Store
 # MDX, MDD and index DB
 *.zip
 
+.venv
+.pdm-python
 
 # Manual
 doc/
